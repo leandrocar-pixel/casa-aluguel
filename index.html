@@ -151,11 +151,38 @@ footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.9r
 let imagens = [];
 let indiceAtual = 0;
 
+// Carregar campos e imagens salvos do localStorage ao iniciar
+function carregarDadosSalvos() {
+    // Imagens
+    try {
+        const salvas = localStorage.getItem('carouselFotos');
+        if (salvas) {
+            imagens = JSON.parse(salvas);
+            if (!Array.isArray(imagens)) imagens = [];
+        }
+    } catch (e) {
+        imagens = [];
+    }
+    indiceAtual = 0;
+
+    // Campos de texto
+    const campos = ['descricao','caracteristicas','valor','localizacao'];
+    campos.forEach(id => {
+        const valorSalvo = localStorage.getItem('campo_' + id);
+        if (valorSalvo !== null) {
+            document.getElementById(id).value = valorSalvo;
+        }
+    });
+}
+
+carregarDadosSalvos();
+
 function carregarFotos(event) {
     const files = event.target.files;
     imagens = [];
     indiceAtual = 0;
     if (!files || files.length === 0) {
+        salvarImagens();
         atualizarCarrossel();
         return;
     }
@@ -167,11 +194,19 @@ function carregarFotos(event) {
     Promise.all(readers).then(results => {
         imagens = results;
         indiceAtual = 0;
+        salvarImagens();
         atualizarCarrossel();
     }).catch(() => {
         imagens = [];
+        salvarImagens();
         atualizarCarrossel();
     });
+}
+
+function salvarImagens() {
+    try {
+        localStorage.setItem('carouselFotos', JSON.stringify(imagens));
+    } catch (e) {}
 }
 
 function readFileAsDataURL(file) {
@@ -200,7 +235,7 @@ function atualizarCarrossel() {
         slides.appendChild(img);
     });
     counter.textContent = 'Foto ' + (indiceAtual + 1) + ' de ' + imagens.length;
-    atualizarWhatsApp(); // optional: inform user that there are photos (text only)
+    atualizarWhatsApp();
 }
 
 function mudarFoto(n) {
@@ -217,7 +252,7 @@ function mudarFoto(n) {
 
 function sanitizeText(s) {
     if (!s) return '';
-    return s.replace(/\r?\n/g, ' ').trim();
+    return s.replace(/\\r?\\n/g, ' ').trim();
 }
 
 function atualizarWhatsApp() {
@@ -226,19 +261,22 @@ function atualizarWhatsApp() {
     const caracteristicas = sanitizeText(document.getElementById('caracteristicas').value);
     const valor = sanitizeText(document.getElementById('valor').value);
     const local = sanitizeText(document.getElementById('localizacao').value);
-    let message = `${document.getElementById('titulo').textContent} - Tenho interesse.\n`;
-    if (valor) message += `Valor: ${valor}\n`;
-    if (local) message += `Localização: ${local}\n`;
-    if (descricao) message += `Descrição: ${descricao}\n`;
-    if (caracteristicas) message += `Características: ${caracteristicas}\n`;
+    let message = `${document.getElementById('titulo').textContent} - Tenho interesse.\\n`;
+    if (valor) message += `Valor: ${valor}\\n`;
+    if (local) message += `Localização: ${local}\\n`;
+    if (descricao) message += `Descrição: ${descricao}\\n`;
+    if (caracteristicas) message += `Características: ${caracteristicas}\\n`;
     if (imagens.length > 0) message += `(Foram adicionadas ${imagens.length} foto(s).)`;
     const encoded = encodeURIComponent(message);
     document.getElementById('whats').href = base + '?text=' + encoded;
 }
 
-// update WhatsApp link when fields change
+// update WhatsApp link and save fields when fields change
 ['descricao','caracteristicas','valor','localizacao'].forEach(id=>{
-    document.getElementById(id).addEventListener('input', atualizarWhatsApp, {passive:true});
+    document.getElementById(id).addEventListener('input', function(e) {
+        atualizarWhatsApp();
+        localStorage.setItem('campo_' + id, e.target.value);
+    }, {passive:true});
 });
 
 // keyboard navigation
@@ -247,8 +285,9 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') mudarFoto(1);
 });
 
-// initialize link
+// initialize link e carrossel
 atualizarWhatsApp();
+atualizarCarrossel();
 </script>
 </body>
 </html>
