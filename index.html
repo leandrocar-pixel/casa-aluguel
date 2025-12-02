@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Casa para Alugar - Modelo</title>
+<style>
+:root {
+    --primary: #25d366;
+    --muted: #555;
+    --bg: #fff;
+    --radius: 8px;
+}
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    margin: 0;
+    background: #f7f7f8;
+    color: #222;
+}
+header {
+    background: linear-gradient(90deg,#ffffff,#f1f6f2);
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #e6e6e6;
+}
+.container {
+    max-width: 820px;
+    margin: 22px auto;
+    padding: 18px;
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(20,20,30,0.04);
+}
+h1,h2,h3 { margin: 8px 0; }
+#titulo { margin-bottom: 4px; }
+#subtitulo { margin-top: 0; color: var(--muted); font-size: 0.95rem; }
+
+.btn-whats {
+    display: inline-block;
+    text-decoration: none;
+    background: var(--primary);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin: 10px 0 18px;
+}
+.btn-whats:hover { background: #1eb354; }
+
+/* Carousel */
+#carousel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 16px 0;
+}
+#carousel button {
+    background: rgba(0,0,0,0.06);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    user-select: none;
+}
+#slides {
+    flex: 1;
+    min-height: 200px;
+    max-height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #f2f3f5;
+    position: relative;
+}
+#slides img {
+    max-width: 100%;
+    max-height: 420px;
+    display: none;
+    object-fit: contain;
+    width: 100%;
+    height: auto;
+    transition: opacity 240ms ease;
+}
+#slides img.active {
+    display: block;
+    opacity: 1;
+}
+.carousel-counter {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 6px;
+    text-align: center;
+}
+
+/* Forms */
+input[type="file"] { margin: 10px 0 12px; }
+textarea, input[type="text"] {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--radius);
+    border: 1px solid #e1e1e1;
+    font-size: 16px;
+    resize: vertical;
+    background: white;
+}
+footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.9rem; margin-top: 18px; }
+@media (max-width:640px){
+    #carousel { gap: 6px; }
+    #carousel button { padding: 8px; font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<header>
+    <h1 id="titulo">Casa para Alugar</h1>
+    <p id="subtitulo">Descrição breve do anúncio</p>
+</header>
+
+<div class="container">
+    <h2>Envie fotos da casa</h2>
+    <input id="fileInput" type="file" accept="image/*" multiple onchange="carregarFotos(event)">
+    <div id="carousel" aria-label="Carrossel de fotos">
+        <button id="prev" onclick="mudarFoto(-1)" aria-label="Foto anterior">❮</button>
+        <div id="slides" role="list"></div>
+        <button id="next" onclick="mudarFoto(1)" aria-label="Próxima foto">❯</button>
+    </div>
+    <div class="carousel-counter" id="counter">Nenhuma foto carregada</div>
+
+    <h2>Descrição</h2>
+    <textarea id="descricao" style="height:120px; font-size:16px;">Casa espaçosa...</textarea>
+
+    <h3>Características</h3>
+    <textarea id="caracteristicas" style="height:120px; font-size:16px;">3 quartos...</textarea>
+
+    <h3>Valor do aluguel</h3>
+    <input id="valor" type="text" placeholder="Ex: R$ 1.500 / mês" style="font-size:18px;">
+
+    <a id="whats" class="btn-whats" href="https://wa.me/61999532815" target="_blank" rel="noopener">Fale comigo no WhatsApp</a>
+
+    <h3>Localização</h3>
+    <input id="localizacao" type="text" placeholder="Bairro / Cidade" style="font-size:18px;">
+</div>
+
+<footer>© 2025 - Modelo de Anúncio Personalizável</footer>
+
+<script>
+let imagens = [];
+let indiceAtual = 0;
+
+function carregarFotos(event) {
+    const files = event.target.files;
+    imagens = [];
+    indiceAtual = 0;
+    if (!files || files.length === 0) {
+        atualizarCarrossel();
+        return;
+    }
+    // read files in order
+    const readers = [];
+    for (let i = 0; i < files.length; i++) {
+        readers.push(readFileAsDataURL(files[i]));
+    }
+    Promise.all(readers).then(results => {
+        imagens = results;
+        indiceAtual = 0;
+        atualizarCarrossel();
+    }).catch(() => {
+        imagens = [];
+        atualizarCarrossel();
+    });
+}
+
+function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = e => resolve(e.target.result);
+        r.onerror = () => reject();
+        r.readAsDataURL(file);
+    });
+}
+
+function atualizarCarrossel() {
+    const slides = document.getElementById('slides');
+    const counter = document.getElementById('counter');
+    slides.innerHTML = '';
+    if (!imagens || imagens.length === 0) {
+        counter.textContent = 'Nenhuma foto carregada';
+        return;
+    }
+    imagens.forEach((src, i) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = 'Foto ' + (i + 1);
+        img.dataset.index = i;
+        if (i === indiceAtual) img.classList.add('active');
+        slides.appendChild(img);
+    });
+    counter.textContent = 'Foto ' + (indiceAtual + 1) + ' de ' + imagens.length;
+    atualizarWhatsApp(); // optional: inform user that there are photos (text only)
+}
+
+function mudarFoto(n) {
+    if (!imagens || imagens.length === 0) return;
+    indiceAtual = (indiceAtual + n + imagens.length) % imagens.length;
+    // re-render active class
+    const imgs = document.querySelectorAll('#slides img');
+    imgs.forEach(img => img.classList.remove('active'));
+    const current = document.querySelector('#slides img[data-index="'+indiceAtual+'"]');
+    if (current) current.classList.add('active');
+    const counter = document.getElementById('counter');
+    counter.textContent = 'Foto ' + (indiceAtual + 1) + ' de ' + imagens.length;
+}
+
+function sanitizeText(s) {
+    if (!s) return '';
+    return s.replace(/\r?\n/g, ' ').trim();
+}
+
+function atualizarWhatsApp() {
+    const base = 'https://wa.me/61999532815';
+    const descricao = sanitizeText(document.getElementById('descricao').value);
+    const caracteristicas = sanitizeText(document.getElementById('caracteristicas').value);
+    const valor = sanitizeText(document.getElementById('valor').value);
+    const local = sanitizeText(document.getElementById('localizacao').value);
+    let message = `${document.getElementById('titulo').textContent} - Tenho interesse.\n`;
+    if (valor) message += `Valor: ${valor}\n`;
+    if (local) message += `Localização: ${local}\n`;
+    if (descricao) message += `Descrição: ${descricao}\n`;
+    if (caracteristicas) message += `Características: ${caracteristicas}\n`;
+    if (imagens.length > 0) message += `(Foram adicionadas ${imagens.length} foto(s).)`;
+    const encoded = encodeURIComponent(message);
+    document.getElementById('whats').href = base + '?text=' + encoded;
+}
+
+// update WhatsApp link when fields change
+['descricao','caracteristicas','valor','localizacao'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', atualizarWhatsApp, {passive:true});
+});
+
+// keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') mudarFoto(-1);
+    if (e.key === 'ArrowRight') mudarFoto(1);
+});
+
+// initialize link
+atualizarWhatsApp();
+</script>
+</body>
+</html>
